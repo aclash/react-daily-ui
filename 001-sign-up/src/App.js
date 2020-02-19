@@ -58,6 +58,10 @@ var App = React.createClass({
 	},
 	
 	handleSubmit: function(e) {
+		for (let i = 0; i < 5; ++i){
+			let a = i * 10;
+			console.log(a);
+		}
 		this.setState({ mounted: false });
 		e.preventDefault();
 	},

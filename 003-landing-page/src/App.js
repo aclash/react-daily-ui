@@ -8,44 +8,25 @@ import './App.css';
 
 // Container
 var App = React.createClass({ displayName: "App",
-  getInitialState: function () {
-    return { data: [] };
-  },
-  performSearch: function (e) {
-    // stop form from submitting
-    e.preventDefault();
-  },
-  componentDidUpdate: function () {
-
-  },
-  render: function () {
-    return (
-      <div>
-        <TitleList title="Recommended List" url='discover/movie?sort_by=popularity.desc&page=1' />
-        <TitleList title="My List" url='discover/movie?sort_by=popularity.desc&page=1' />
-      </div>);
-  } });
-
-  var TitleList = React.createClass({ displayName: "TitleList",
   apiKey: '87dfa1c669eea853da609d4968d294be',
   getInitialState: function () {
-    return { data: [], mounted: false};
+    return { mylistData: [], recommendedList: [], mounted: false };
   },
   loadContent: function () {
-    var requestUrl = 'https://api.themoviedb.org/3/' + this.props.url + '&api_key=' + this.apiKey;
+    var requestUrl = 'https://api.themoviedb.org/3/' + 'discover/movie?sort_by=popularity.desc&page=1' + '&api_key=' + this.apiKey;
    
     fetch(requestUrl).then((response)=>{
         return response.json();
     }).then((data)=>{
-        if (this.props.title == "Recommended List"){
-          this.setState({data : data.results.slice(0, 5)});
-        }
-        else{  
-          this.setState({data : data.results.slice(5, 10)});
-        }
+        this.setState({mylistData : data.results.slice(0, 5)});
+        this.setState({recommendedList : data.results.slice(5, 10)});
     }).catch((err)=>{
         console.log("There has been an error");
     });
+  },
+  performSearch: function (e) {
+    // stop form from submitting
+    e.preventDefault();
   },
   componentDidMount: function () {
     this.loadContent();
@@ -54,52 +35,73 @@ var App = React.createClass({ displayName: "App",
   componentWillUnmount: function () {
     this.setState({ mounted: false });
   },
-  
   addToMyList: function(id){
-    console.log(id);
+    for (let i = 0; i < this.state.recommendedList.length; ++i){
+      if (this.state.recommendedList[i].id === id){
+        this.state.mylistData.push(this.state.recommendedList[i]);
+        break;
+      }
+    }
+    this.setState({mylistData : this.state.mylistData});
   },
                                    
   removeFromMyList: function(id){
-    console.log("removeFromMyList");
-    let index = -1;
-    for (let i = 0; i < this.states.data.length; ++i){
-      if (this.states.data[i].id == id)
-        index = i;
+    for (let i = 0; i < this.state.mylistData.length; ++i){
+      if (this.state.mylistData[i].id === id){
+        this.state.mylistData.splice(i, 1);
+        break;
+      }
     }
-    this.props.data.splice(index, 1);
-    this.setState({data : this.states.data});
-    console.log(id);
+    this.setState({mylistData : this.state.mylistData});
+  },
+  render: function () {
+    return (
+      <div>
+        <TitleList title="My List" listData={ this.state.mylistData} removal={this.removeFromMyList}/>
+        <TitleList title="Recommended" listData = {this.state.recommendedList} addition={this.addToMyList}/>
+      </div>);
+  } });
+
+  var TitleList = React.createClass({ displayName: "TitleList",
+  getInitialState: function () {
+    return { data: [], mounted: false};
+  },
+  loadContent: function () {
+    //this.setState({ data: this.props. });
+  },
+  componentDidMount: function () {
+    this.loadContent();
+    this.setState({ mounted: true });
+  },
+
+  componentWillUnmount: function () {
+    this.setState({ mounted: false });
   },
 
   clickItem: function(id){
-    if (this.props.title == "My List"){
-      console.log("clickItem");
+    if (this.props.title === "My List")
       this.removeFromMyList(id);
-    }
-    else{
-      console.log("clickItem");
-      let a = 444;
+    else
       this.addToMyList(id);
-    }
   },
-  
-  
+  addToMyList: function(id){
+    this.props.addition(id);
+  },
+                                   
+  removeFromMyList: function(id){
+    this.props.removal(id);
+  },
   render: function () {
-    if (this.state.data) {
-      console.log()
-      var titles = this.state.data.map( (title, i) =>{
-        if (i < 6 ) {
-
-          var backDrop = 'http://image.tmdb.org/t/p/original' + title.backdrop_path;
-          if (!title.name) {
-            var name = title.original_title;
-          } else {
-            var name = title.name;
-          }
-
-          return (
-            React.createElement(Item, { key: title.id, movieId: title.id, title: name, score: title.vote_average, overview: title.overview, backdrop: backDrop, itemFun: this.clickItem}));
+    if (this.props.listData) {
+      var titles = this.props.listData.map( (title, i) =>{
+        var backDrop = 'http://image.tmdb.org/t/p/original' + title.backdrop_path;
+        if (!title.name) {
+          var name = title.original_title;
+        } else {
+          var name = title.name;
         }
+        return (
+          React.createElement(Item, { key: title.id, movieId: title.id, title: name, score: title.vote_average, overview: title.overview, backdrop: backDrop, itemFun: this.clickItem}));
       });
 
     } else {
